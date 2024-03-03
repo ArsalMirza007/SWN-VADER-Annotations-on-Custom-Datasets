@@ -1,0 +1,76 @@
+import pandas as pd
+from nltk.corpus import sentiwordnet as swn
+from nltk import word_tokenize
+from nltk import pos_tag
+import nltk
+
+# Download NLTK data (uncomment if not already downloaded)
+nltk.download('punkt')
+nltk.download('sentiwordnet')
+nltk.download('wordnet')
+nltk.download('averaged_perceptron_tagger')
+
+# Define functions to get part-of-speech tags for words
+def get_pos_tags(text):
+    words = word_tokenize(text)
+    pos_tags = pos_tag(words)
+    return pos_tags
+
+def assign_sentiment_score(word):
+    synsets = list(swn.senti_synsets(word))
+    if synsets:
+        sentiment_score = sum(s.pos_score() - s.neg_score() for s in synsets) / len(synsets)
+        return sentiment_score
+    else:
+        return 0.0
+
+def analyze_sentiment(text):
+    # Tokenize the text and calculate sentiment scores for each word
+    words = word_tokenize(text)
+    sentiment_scores = [assign_sentiment_score(word) for word in words]
+    
+    # Calculate the aggregate sentiment score for the entire text
+    total_sentiment_score = sum(sentiment_scores)
+    
+    # Categorize sentiment based on the aggregate score
+    if total_sentiment_score > 0:
+        sentiment_label = 'Positive'
+    elif total_sentiment_score < 0:
+        sentiment_label = 'Negative'
+    else:
+        sentiment_label = 'Neutral'
+    
+    return total_sentiment_score, sentiment_label
+
+# Load the dataset (assuming an Excel file with a 'Tweets' column)
+dataset = pd.read_excel('/content/Tweets File.xlsx')
+
+# Extract the 'Tweets' column
+tweets_data = dataset['Tweets'].tolist()
+
+# Initialize lists to store sentiment scores, POS tags, and sentiment labels
+sentiment_scores_list = []
+pos_tags_list = []
+sentiment_labels = []
+
+# Iterate through tweet data to compute sentiment scores, POS tags, and labels
+for text in tweets_data:
+    sentiment_score, sentiment_label = analyze_sentiment(text)
+    pos_tags = get_pos_tags(text)
+    
+    sentiment_scores_list.append(sentiment_score)
+    pos_tags_list.append(pos_tags)
+    sentiment_labels.append(sentiment_label)
+
+# Create a new DataFrame for the sentiment analysis results
+results_df = pd.DataFrame({
+    'Text': tweets_data,
+    'POS_Tags': pos_tags_list,
+    'Sentiment_Scores': sentiment_scores_list,
+    'Sentiment_Labels': sentiment_labels,
+})
+
+# Save the sentiment analysis results to a CSV file
+results_df.to_csv('Tweet File.csv', index=False, escapechar='\\')
+
+print('CSV file saved successfully.')

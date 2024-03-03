@@ -1,0 +1,62 @@
+import pandas as pd
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+from nltk import word_tokenize, pos_tag
+import nltk
+
+# Download NLTK data (uncomment if not already downloaded)
+nltk.download('punkt')
+nltk.download('vader_lexicon')
+
+# Initialize the VADER sentiment analyzer
+sid = SentimentIntensityAnalyzer()
+
+# Define a function to analyze sentiment using VADER and get POS tags
+def analyze_sentiment_vader_with_pos(text):
+    # Analyze sentiment using VADER
+    sentiment_scores = sid.polarity_scores(text)
+
+    # Categorize sentiment based on the compound score
+    if sentiment_scores['compound'] >= 0.05:
+        sentiment_label = 'Positive'
+    elif sentiment_scores['compound'] <= -0.05:
+        sentiment_label = 'Negative'
+    else:
+        sentiment_label = 'Neutral'
+
+    # Get POS tags
+    pos_tags = pos_tag(word_tokenize(text))
+
+    return sentiment_scores['compound'], sentiment_label, pos_tags
+
+# Load the dataset (assuming an Excel file with a 'Tweets' column)
+dataset = pd.read_excel('/content/Tweets File.xlsx')
+
+# Extract the 'Tweets' column
+tweets_data = dataset['Tweets'].tolist()
+
+# Initialize lists to store sentiment scores, sentiment labels, and POS tags
+sentiment_scores_list = []
+sentiment_labels = []
+pos_tags_list = []
+
+# Iterate through tweet data to compute sentiment scores, labels, and POS tags
+for text in tweets_data:
+    sentiment_score, sentiment_label, pos_tags = analyze_sentiment_vader_with_pos(text)
+
+    sentiment_scores_list.append(sentiment_score)
+    sentiment_labels.append(sentiment_label)
+    pos_tags_list.append(pos_tags)
+
+# Create a new DataFrame for the sentiment analysis results
+results_df = pd.DataFrame({
+    'Text': tweets_data,
+    'POS_Tags': pos_tags_list,
+    'Sentiment_Score': sentiment_scores_list,
+    'Sentiment_Label': sentiment_labels,
+
+})
+
+# Save the sentiment analysis results to a CSV file
+results_df.to_csv('Output_VADER.csv', index=False, escapechar='\\')
+
+print('CSV file saved successfully.')
